@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aicontext-toolkit"
+version = "1.0.0"
+description = "Suite de ferramentas para produtividade"
+authors = [{name = "ScriptMaster Pro"}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "tkfilebrowser",
+    "charset-normalizer",
+]
+
+[project.scripts]
+aicontext-toolkit = "aicontext_toolkit.__main__:main"
