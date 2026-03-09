@@ -7,15 +7,14 @@ Toolkit objetivo projetado para agilizar o fluxo de trabalho de desenvolvedores 
 ---
 
 
-> **Atenção:** Evite extrair e enviar toda a sua base de código de uma só vez. Despejar excesso de informação aglomerada em um único prompt degrada significativamente a inteligência e as respostas da sua IA. Extraia e injete o contexto em partes/etapas lógicas, focando apenas nas pastas ou módulos estritamente relevantes para a funcionalidade que você está construindo no momento.
-
-
 ## 🚀 Guia Rápido de Instalação
 
 Abra seu terminal na raiz do projeto e instale as dependências executando o projeto no modo editável:
 
 ```bash
-# Instala as dependências e linka o pacote localmente
+# Instala as dependências e linka o pacote localmente no "modo editável"
+# (Isso permite que você altere os códigos do projeto no futuro e as mudanças 
+#  tenham efeito imediato, sem precisar instalar tudo de novo)
 pip install -e .
 
 # Inicia o Launcher do Toolkit
@@ -46,9 +45,12 @@ Mapeador de topologia de arquivos.
 ## 🎯 Casos de Uso
 
 **Para Desenvolvedores:**
-Útil em casos raros onde não se pode usar IA injetada na IDE e necessita-se operar via navegador:
-- Jogar múltiplas classes rapidamente em interfaces web como **Perplexity**, **ChatGPT** ou **Claude**.
-- Evitar copiar/colar arquivos um por um ao pedir revisão de arquitetura para a IA.
+Útil em casos raros onde não se pode usar IA na IDE (Windsurf, Cursor, Antigravity, etc) e necessita-se operar via navegador:
+- Extrair contextos de módulos rapidamente para interfaces web como **Perplexity**, **ChatGPT** ou **Claude**.
+- Evitar o trabalho repetitivo de copiar/colar arquivos um por um ao pedir revisão de arquitetura para a IA.
+
+> **Atenção:** Evite extrair e enviar toda a sua base de código de uma só vez. Despejar excesso de informação aglomerada em um único prompt degrada significativamente a inteligência e as respostas da sua IA. Extraia e injete o contexto em partes/etapas lógicas, focando apenas nas pastas ou módulos estritamente relevantes para a funcionalidade que você está construindo no momento.
+
 
 **Para Usuários de Obsidian:**
 - Alimentar o LLM com o mapa do seu Vault (Árvore ASCII) para pedir sugestões de reestruturação.
