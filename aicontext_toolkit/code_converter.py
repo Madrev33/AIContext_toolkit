@@ -1,7 +1,7 @@
 """
-Code to Markdown Converter - Combinador de códigos para Markdown.
+Code to Multi-Format Converter - Conversor de múltiplos arquivos para vários formatos.
 
-Converte múltiplos arquivos de código em um único arquivo Markdown
+Converte múltiplos arquivos de código em um único arquivo (Markdown ou Texto Puro)
 formatado para uso com AI/LLM.
 """
 
@@ -26,11 +26,11 @@ from .utils import detect_encoding, format_file_size, format_file_size_short
 
 
 class CodeToMarkdownConverter(BaseToolkitApp):
-    """Conversor de múltiplos arquivos de código em Markdown formatado."""
+    """Conversor de múltiplos arquivos de código para Markdown ou Texto Puro."""
 
     def __init__(self) -> None:
         super().__init__(
-            title="🔧 Code to Markdown Converter v1.0",
+            title="🔧 Code Converter v2.0",
             default_filename="combined_code",
             default_status="Pronto para converter arquivos",
         )
@@ -43,7 +43,7 @@ class CodeToMarkdownConverter(BaseToolkitApp):
         return "converter_config.json"
 
     def get_main_button_text(self) -> str:
-        return "🚀 Converter para Markdown"
+        return "🚀 Converter"
 
     def setup_tool_variables(self) -> None:
         """Configura variáveis específicas do converter."""
@@ -56,6 +56,7 @@ class CodeToMarkdownConverter(BaseToolkitApp):
         self.remove_empty_lines = tk.BooleanVar(value=False)
         self.encoding_method = tk.StringVar(value="auto")
         self.excluded_patterns = tk.StringVar(value="????-??-??.md")
+        self.output_format = tk.StringVar(value="markdown")
 
     def get_settings_dict(self) -> dict:
         return {
@@ -65,6 +66,7 @@ class CodeToMarkdownConverter(BaseToolkitApp):
             "remove_empty_lines": self.remove_empty_lines.get(),
             "encoding_method": self.encoding_method.get(),
             "excluded_patterns": self.excluded_patterns.get(),
+            "output_format": self.output_format.get(),
         }
 
     def apply_settings(self, settings: dict) -> None:
@@ -74,6 +76,7 @@ class CodeToMarkdownConverter(BaseToolkitApp):
         self.remove_empty_lines.set(settings.get("remove_empty_lines", False))
         self.encoding_method.set(settings.get("encoding_method", "auto"))
         self.excluded_patterns.set(settings.get("excluded_patterns", "????-??-??.md"))
+        self.output_format.set(settings.get("output_format", "markdown"))
 
     # =========================================================================
     # UI Específica
@@ -84,14 +87,34 @@ class CodeToMarkdownConverter(BaseToolkitApp):
         # Título
         title_label = ttk.Label(
             parent,
-            text="🔧 Combinador de Códigos para Markdown",
+            text="🔧 Combinador de Códigos Multi-Formato",
             font=("Arial", 16, "bold"),
         )
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
 
+        self._setup_format_selection(parent)
         self._setup_file_selection(parent)
         self._setup_configurations(parent)
         self._setup_preview_section(parent)
+
+    def _setup_format_selection(self, parent: ttk.Frame) -> None:
+        """Configura a seção de seleção de formato."""
+        format_frame = ttk.LabelFrame(parent, text="📄 Formato de Saída", padding="10")
+        format_frame.grid(row=0, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+
+        ttk.Radiobutton(
+            format_frame,
+            text="📝 Markdown (.md)",
+            variable=self.output_format,
+            value="markdown",
+        ).grid(row=0, column=0, sticky=tk.W, padx=(0, 20))
+
+        ttk.Radiobutton(
+            format_frame,
+            text="📄 Texto Puro (.txt)",
+            variable=self.output_format,
+            value="txt",
+        ).grid(row=0, column=1, sticky=tk.W)
 
     def _setup_file_selection(self, parent: ttk.Frame) -> None:
         """Configura a seção de seleção de arquivos/pastas."""
@@ -371,6 +394,51 @@ class CodeToMarkdownConverter(BaseToolkitApp):
 
         return "\n".join(md_content)
 
+    def _format_content_for_txt(self, content: str, file_info: Dict) -> str:
+        """Formata o conteúdo para Texto Puro com bordas ASCII."""
+        txt_content: List[str] = []
+
+        # Cabeçalho do arquivo
+        txt_content.append("╔════════════════════════════════════════════════════════════════╗")
+        # Truncate filename if too long
+        filename = file_info["name"]
+        if len(filename) > 55:
+            filename = filename[:52] + "..."
+        txt_content.append(f"║ Arquivo: {filename:<55}║")
+        txt_content.append("╠════════════════════════════════════════════════════════════════╣")
+
+        if self.include_file_stats.get():
+            path_str = file_info["path"]
+            if len(path_str) > 52:
+                path_str = "..." + path_str[-49:]
+            txt_content.append(f"║ Caminho: {path_str:<52}║")
+
+            size_str = format_file_size(file_info["size"])
+            txt_content.append(f"║ Tamanho: {size_str:<52}║")
+            txt_content.append(f"║ Linhas: {file_info['lines']:<54}║")
+            txt_content.append(f"║ Caracteres: {file_info['chars']:<47}║")
+            txt_content.append(f"║ Encoding: {file_info['encoding']:<50}║")
+
+            if self.include_timestamps.get():
+                modified_str = file_info["modified"].strftime("%Y-%m-%d %H:%M:%S")
+                txt_content.append(f"║ Modificado: {modified_str:<48}║")
+
+        txt_content.append("╠════════════════════════════════════════════════════════════════╣")
+        txt_content.append("║ CONTEÚDO:                                                      ║")
+        txt_content.append("╠════════════════════════════════════════════════════════════════╣")
+
+        if self.add_line_numbers.get():
+            lines = content.split("\n")
+            for i, line in enumerate(lines, 1):
+                txt_content.append(f"{i:4d} | {line}")
+        else:
+            txt_content.append(content)
+
+        txt_content.append("╚════════════════════════════════════════════════════════════════╝")
+        txt_content.append("")
+
+        return "\n".join(txt_content)
+
     # =========================================================================
     # Ação Principal
     # =========================================================================
@@ -395,16 +463,36 @@ class CodeToMarkdownConverter(BaseToolkitApp):
             self.progress_var.set(0)
 
             total_files = len(self.selected_files)
-            markdown_content: List[str] = []
+            output_content: List[str] = []
+            output_format = self.output_format.get()
 
             # Cabeçalho
-            markdown_content.append("# Combined Code Export")
-            markdown_content.append("")
-            markdown_content.append(
-                f"**Data de criação:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            )
-            markdown_content.append(f"**Total de arquivos:** {total_files}")
-            markdown_content.extend(["", "---", ""])
+            if output_format == "markdown":
+                output_content.append("# Combined Code Export")
+                output_content.append("")
+                output_content.append(
+                    f"**Data de criação:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+                output_content.append(f"**Total de arquivos:** {total_files}")
+                output_content.extend(["", "---", ""])
+            else:  # txt
+                output_content.append(
+                    "╔════════════════════════════════════════════════════════════════╗"
+                )
+                output_content.append(
+                    "║           COMBINED CODE EXPORT - TEXTO PURO                     ║"
+                )
+                output_content.append(
+                    "╠════════════════════════════════════════════════════════════════╣"
+                )
+                output_content.append(
+                    f"║ Data de criação: {datetime.now().strftime('%Y-%m-%d %H:%M:%S'):<45}║"
+                )
+                output_content.append(f"║ Total de arquivos: {total_files:<43}║")
+                output_content.append(
+                    "╚════════════════════════════════════════════════════════════════╝"
+                )
+                output_content.append("")
 
             # Processar cada arquivo
             for i, file_path in enumerate(self.selected_files):
@@ -413,26 +501,42 @@ class CodeToMarkdownConverter(BaseToolkitApp):
                     self.progress_var.set((i / total_files) * 100)
 
                     content, file_info = self._read_file_content(file_path)
-                    formatted = self._format_content_for_markdown(content, file_info)
-                    markdown_content.append(formatted)
+
+                    if output_format == "markdown":
+                        formatted = self._format_content_for_markdown(content, file_info)
+                    else:  # txt
+                        formatted = self._format_content_for_txt(content, file_info)
+
+                    output_content.append(formatted)
 
                 except Exception as e:
-                    error_md = (
-                        f"---\n"
-                        f"## {Path(file_path).name} [ERRO]\n\n"
-                        f"**Erro ao processar arquivo:** {e}\n\n"
-                        f"---\n"
-                    )
-                    markdown_content.append(error_md)
+                    filename = Path(file_path).name
+                    if output_format == "markdown":
+                        error_formatted = (
+                            f"\n---\n"
+                            f"## {filename} [ERRO]\n\n"
+                            f"**Erro ao processar arquivo:** {e}\n\n"
+                            f"---\n"
+                        )
+                    else:  # txt
+                        error_formatted = (
+                            f"\n╔════════════════════════════════════════════════════════════════╗\n"
+                            f"║ ❌ ERRO: {filename:<47}║\n"
+                            f"╠════════════════════════════════════════════════════════════════╣\n"
+                            f"║ {str(e):<62}║\n"
+                            f"╚════════════════════════════════════════════════════════════════╝\n"
+                        )
+                    output_content.append(error_formatted)
 
             # Salvar
             self.status_var.set("Salvando arquivo final...")
             self.progress_var.set(95)
 
-            output_path = Path(self.output_dir.get()) / f"{self.output_filename.get()}.md"
+            ext = "md" if output_format == "markdown" else "txt"
+            output_path = Path(self.output_dir.get()) / f"{self.output_filename.get()}.{ext}"
 
             with open(output_path, "w", encoding="utf-8", errors="replace") as f:
-                f.write("\n".join(markdown_content))
+                f.write("\n".join(output_content))
 
             self.progress_var.set(100)
             self.status_var.set(f"Conversão concluída! Arquivo salvo em: {output_path}")
